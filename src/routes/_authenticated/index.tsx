@@ -1,7 +1,20 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, Plus, Archive, Folder, Clock, Pencil, Trash2, X } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Archive,
+  Folder,
+  Clock,
+  Pencil,
+  Trash2,
+  X,
+  AlertTriangle,
+  Download,
+  LogOut,
+  Filter,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,9 +52,13 @@ type Cliente = {
 
 type ConsultaRow = { cliente_id: string; consultado_em: string };
 
+const TWO_YEARS_MS = 1000 * 60 * 60 * 24 * 365 * 2;
+
 function Index() {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [gavetaFilter, setGavetaFilter] = useState<string>("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Cliente | null>(null);
@@ -52,29 +69,70 @@ function Index() {
     return () => clearTimeout(t);
   }, [query]);
 
-  const { data: results = [], isFetching } = useQuery({
-    queryKey: ["clientes", debounced],
+  // Lista de gavetas distintas (para o filtro)
+  const { data: gavetas = [] } = useQuery({
+    queryKey: ["gavetas-distintas"],
+    queryFn: async (): Promise<string[]> => {
+      const { data, error } = await supabase.from("clientes").select("gaveta").not("gaveta", "is", null);
+      if (error) throw error;
+      const set = new Set<string>();
+      for (const r of data ?? []) if (r.gaveta) set.add(r.gaveta);
+      return Array.from(set).sort();
+    },
+  });
+
+  // Recentes (top 8 distintos por última consulta)
+  const { data: recentes = [] } = useQuery({
+    queryKey: ["recentes"],
     queryFn: async (): Promise<Cliente[]> => {
-      let q = supabase.from("clientes").select("id,codigo,nome,gaveta,pasta,obs").order("nome").limit(50);
+      const { data: cons, error } = await supabase
+        .from("consultas")
+        .select("cliente_id,consultado_em")
+        .order("consultado_em", { ascending: false })
+        .limit(80);
+      if (error) throw error;
+      const seen = new Set<string>();
+      const ids: string[] = [];
+      for (const c of (cons ?? []) as ConsultaRow[]) {
+        if (!seen.has(c.cliente_id)) {
+          seen.add(c.cliente_id);
+          ids.push(c.cliente_id);
+        }
+        if (ids.length >= 8) break;
+      }
+      if (ids.length === 0) return [];
+      const { data: rows } = await supabase
+        .from("clientes")
+        .select("id,codigo,nome,gaveta,pasta,obs")
+        .in("id", ids);
+      const byId = new Map((rows ?? []).map((r) => [r.id, r as Cliente]));
+      return ids.map((id) => byId.get(id)).filter(Boolean) as Cliente[];
+    },
+  });
+
+  const { data: results = [], isFetching } = useQuery({
+    queryKey: ["clientes", debounced, gavetaFilter],
+    queryFn: async (): Promise<Cliente[]> => {
+      let q = supabase.from("clientes").select("id,codigo,nome,gaveta,pasta,obs").order("nome").limit(80);
       const term = debounced;
       if (term) {
-        // Se for número puro => busca por pasta exata + código
         if (/^\d+$/.test(term)) {
           q = q.or(`pasta.eq.${term},codigo.eq.${term}`);
         } else {
           q = q.ilike("nome", `%${term}%`);
         }
-      } else {
-        // sem busca: últimos consultados? mostrar nada para tela limpa
-        return [];
       }
+      if (gavetaFilter) q = q.eq("gaveta", gavetaFilter);
+      if (!term && !gavetaFilter) return [];
       const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },
   });
 
-  const ids = useMemo(() => results.map((c) => c.id), [results]);
+  const showing = debounced || gavetaFilter ? results : recentes;
+
+  const ids = useMemo(() => showing.map((c) => c.id), [showing]);
   const { data: consultasByCliente = {} } = useQuery({
     queryKey: ["ultimas-consultas", ids],
     enabled: ids.length > 0,
@@ -89,7 +147,6 @@ function Index() {
       for (const row of (data ?? []) as ConsultaRow[]) {
         (map[row.cliente_id] ||= []).push(row.consultado_em);
       }
-      // Manter só 5 por cliente
       for (const k of Object.keys(map)) map[k] = map[k].slice(0, 5);
       return map;
     },
@@ -100,7 +157,10 @@ function Index() {
       const { error } = await supabase.from("consultas").insert({ cliente_id });
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["ultimas-consultas"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ultimas-consultas"] });
+      qc.invalidateQueries({ queryKey: ["recentes"] });
+    },
   });
 
   const handleOpen = (c: Cliente) => {
@@ -120,9 +180,63 @@ function Index() {
     onSuccess: () => {
       toast.success("Cliente removido");
       qc.invalidateQueries({ queryKey: ["clientes"] });
+      qc.invalidateQueries({ queryKey: ["recentes"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const exportarInativos = async () => {
+    toast.loading("Gerando lista…", { id: "exp" });
+    const { data: clientes, error } = await supabase
+      .from("clientes")
+      .select("id,codigo,nome,gaveta,pasta")
+      .order("nome");
+    if (error) {
+      toast.error(error.message, { id: "exp" });
+      return;
+    }
+    const { data: cons } = await supabase
+      .from("consultas")
+      .select("cliente_id,consultado_em")
+      .order("consultado_em", { ascending: false });
+    const last = new Map<string, string>();
+    for (const c of (cons ?? []) as ConsultaRow[]) {
+      if (!last.has(c.cliente_id)) last.set(c.cliente_id, c.consultado_em);
+    }
+    const cutoff = Date.now() - TWO_YEARS_MS;
+    const inativos = (clientes ?? []).filter((c) => {
+      const u = last.get(c.id);
+      return !u || new Date(u).getTime() < cutoff;
+    });
+    const csv = [
+      "codigo;nome;gaveta;pasta;ultima_consulta",
+      ...inativos.map((c) => {
+        const u = last.get(c.id) ?? "";
+        return [c.codigo, c.nome, c.gaveta ?? "", c.pasta ?? "", u].join(";");
+      }),
+    ].join("\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `clientes-inativos-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${inativos.length} clientes inativos exportados`, { id: "exp" });
+  };
+
+  const sair = async () => {
+    await qc.cancelQueries();
+    qc.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  };
+
+  const isInactive = (id: string) => {
+    const u = consultasByCliente[id]?.[0];
+    if (!u) return true;
+    return Date.now() - new Date(u).getTime() > TWO_YEARS_MS;
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -140,9 +254,7 @@ function Index() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               R2 Flexo
             </p>
-            <h1 className="font-display text-2xl font-bold tracking-tight leading-none">
-              Arquivos
-            </h1>
+            <h1 className="font-display text-2xl font-bold tracking-tight leading-none">Arquivos</h1>
           </div>
           <Button
             onClick={() => setNewOpen(true)}
@@ -150,6 +262,16 @@ function Index() {
           >
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Novo cliente</span>
+          </Button>
+          <Button
+            onClick={sair}
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            aria-label="Sair"
+            title="Sair"
+          >
+            <LogOut className="h-4 w-4" />
           </Button>
         </header>
 
@@ -175,19 +297,61 @@ function Index() {
           </div>
         </div>
 
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <Filter className="h-3 w-3" /> Gaveta
+          </span>
+          <button
+            onClick={() => setGavetaFilter("")}
+            className={`rounded-full px-3 py-1 text-xs font-medium ring-1 transition ${
+              gavetaFilter === ""
+                ? "bg-primary text-primary-foreground ring-primary"
+                : "bg-surface text-muted-foreground ring-border hover:bg-muted"
+            }`}
+          >
+            Todas
+          </button>
+          {gavetas.map((g) => (
+            <button
+              key={g}
+              onClick={() => setGavetaFilter(g === gavetaFilter ? "" : g)}
+              className={`rounded-full px-3 py-1 text-xs font-medium ring-1 transition ${
+                gavetaFilter === g
+                  ? "bg-primary text-primary-foreground ring-primary"
+                  : "bg-surface text-muted-foreground ring-border hover:bg-muted"
+              }`}
+            >
+              {g.replace(/^GAVETA\s*/i, "G ")}
+            </button>
+          ))}
+          <span className="ml-auto" />
+          <Button
+            onClick={exportarInativos}
+            variant="ghost"
+            size="sm"
+            className="gap-1 rounded-full text-xs"
+            title="Exportar clientes sem consulta há +2 anos"
+          >
+            <Download className="h-3.5 w-3.5" /> Inativos (CSV)
+          </Button>
+        </div>
+
         <p className="mt-3 text-xs text-muted-foreground">
-          {debounced
+          {debounced || gavetaFilter
             ? isFetching
               ? "Buscando…"
               : `${results.length} resultado${results.length === 1 ? "" : "s"}`
-            : "Digite o nome ou o número da pasta para começar."}
+            : recentes.length > 0
+              ? "Consultados recentemente"
+              : "Digite o nome ou o número da pasta para começar."}
         </p>
 
         <ul className="mt-4 space-y-3">
-          {results.map((c) => {
+          {showing.map((c) => {
             const isOpen = openId === c.id;
             const consultas = consultasByCliente[c.id] ?? [];
             const ultima = consultas[0];
+            const inativo = isInactive(c.id);
             return (
               <li
                 key={c.id}
@@ -201,7 +365,17 @@ function Index() {
                     {c.gaveta?.replace(/^GAVETA\s*/i, "") ?? "?"}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold tracking-tight">{c.nome}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="truncate font-semibold tracking-tight">{c.nome}</p>
+                      {inativo && (
+                        <span
+                          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-destructive"
+                          title="Sem consulta há mais de 2 anos — candidato a substituição"
+                        >
+                          <AlertTriangle className="h-3 w-3" /> Inativo
+                        </span>
+                      )}
+                    </div>
                     <p className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
                       <span>Cód. {c.codigo}</span>
                       <span className="inline-flex items-center gap-1">
@@ -276,17 +450,15 @@ function Index() {
           })}
         </ul>
 
-        {debounced && !isFetching && results.length === 0 && (
+        {(debounced || gavetaFilter) && !isFetching && results.length === 0 && (
           <div className="mt-10 rounded-3xl border border-dashed border-border bg-surface/50 p-8 text-center">
             <p className="font-display text-lg font-semibold">Nada encontrado</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Que tal cadastrar como novo cliente?
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">Que tal cadastrar como novo cliente?</p>
             <Button
               onClick={() => setNewOpen(true)}
               className="mt-4 gap-2 rounded-full bg-secondary text-secondary-foreground hover:bg-secondary/90"
             >
-              <Plus className="h-4 w-4" /> Cadastrar "{debounced}"
+              <Plus className="h-4 w-4" /> Cadastrar {debounced ? `"${debounced}"` : "cliente"}
             </Button>
           </div>
         )}
@@ -318,9 +490,7 @@ function Index() {
 function InfoBlock({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
       <p className="mt-0.5 text-sm font-medium">{value}</p>
     </div>
   );
@@ -332,7 +502,13 @@ function formatDate(iso: string) {
 }
 function formatDateTime(iso: string) {
   const d = new Date(iso);
-  return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function ClienteDialog({
@@ -376,7 +552,6 @@ function ClienteDialog({
         const { error } = await supabase.from("clientes").update(payload).eq("id", initial.id);
         if (error) throw error;
       } else {
-        // gera próximo código
         let cod = codigo.trim() ? parseInt(codigo, 10) : NaN;
         if (!cod || Number.isNaN(cod)) {
           const { data } = await supabase
@@ -404,9 +579,7 @@ function ClienteDialog({
           <DialogTitle className="font-display text-2xl">
             {initial ? "Editar cliente" : "Novo cliente"}
           </DialogTitle>
-          <DialogDescription>
-            Preencha o nome, a gaveta e o número da pasta.
-          </DialogDescription>
+          <DialogDescription>Preencha o nome, a gaveta e o número da pasta.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <Field label="Nome do cliente">
@@ -422,7 +595,12 @@ function ClienteDialog({
           </div>
           {!initial && (
             <Field label="Código (opcional)">
-              <Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Auto (próximo disponível)" inputMode="numeric" />
+              <Input
+                value={codigo}
+                onChange={(e) => setCodigo(e.target.value)}
+                placeholder="Auto (próximo disponível)"
+                inputMode="numeric"
+              />
             </Field>
           )}
           <Field label="Observação (opcional)">
@@ -430,7 +608,9 @@ function ClienteDialog({
           </Field>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button variant="ghost" onClick={onClose}>
+            Cancelar
+          </Button>
           <Button
             onClick={() => save.mutate()}
             disabled={save.isPending}
