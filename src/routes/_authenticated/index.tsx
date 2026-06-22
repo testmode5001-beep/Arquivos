@@ -321,7 +321,7 @@ function Index() {
                   : "bg-surface text-muted-foreground ring-border hover:bg-muted"
               }`}
             >
-              {g.replace(/^GAVETA\s*/i, "G ")}
+              {g.replace(/^GAVETA\s*/i, "").trim() || g}
             </button>
           ))}
           <span className="ml-auto" />
@@ -398,7 +398,6 @@ function Index() {
                   <div className="border-t border-border/60 bg-muted/30 px-5 py-4">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <InfoBlock label="Gaveta" value={c.gaveta ?? "—"} />
-                      <InfoBlock label="Pasta" value={c.pasta ?? "—"} />
                       <InfoBlock label="Código" value={String(c.codigo)} />
                       <InfoBlock label="Observação" value={c.obs?.trim() || "—"} />
                     </div>
