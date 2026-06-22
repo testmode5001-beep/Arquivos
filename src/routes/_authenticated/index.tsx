@@ -321,7 +321,7 @@ function Index() {
                   : "bg-surface text-muted-foreground ring-border hover:bg-muted"
               }`}
             >
-              {g.replace(/^GAVETA\s*/i, "G ")}
+              {g.replace(/^GAVETA\s*/i, "").trim() || g}
             </button>
           ))}
           <span className="ml-auto" />
