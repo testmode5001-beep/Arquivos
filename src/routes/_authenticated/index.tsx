@@ -377,12 +377,12 @@ function Index() {
                       )}
                     </div>
                     <p className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
-                      <span>Cód. {c.codigo}</span>
+                      <span>Pasta {c.codigo}</span>
                       <span className="inline-flex items-center gap-1">
                         <Archive className="h-3 w-3" /> {c.gaveta ?? "—"}
                       </span>
                       <span className="inline-flex items-center gap-1">
-                        <Folder className="h-3 w-3" /> Pasta {c.pasta ?? "—"}
+                        <Folder className="h-3 w-3" /> Cód. {c.pasta ?? "—"}
                       </span>
                     </p>
                   </div>
@@ -398,7 +398,8 @@ function Index() {
                   <div className="border-t border-border/60 bg-muted/30 px-5 py-4">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <InfoBlock label="Gaveta" value={c.gaveta ?? "—"} />
-                      <InfoBlock label="Código" value={String(c.codigo)} />
+                      <InfoBlock label="Pasta" value={String(c.codigo)} />
+                      <InfoBlock label="Código" value={c.pasta ?? "—"} />
                       <InfoBlock label="Observação" value={c.obs?.trim() || "—"} />
                     </div>
 
@@ -578,7 +579,7 @@ function ClienteDialog({
           <DialogTitle className="font-display text-2xl">
             {initial ? "Editar cliente" : "Novo cliente"}
           </DialogTitle>
-          <DialogDescription>Preencha o nome, a gaveta e o número da pasta.</DialogDescription>
+        <DialogDescription>Preencha o nome, a gaveta, a pasta e o código.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <Field label="Nome do cliente">
@@ -588,12 +589,12 @@ function ClienteDialog({
             <Field label="Gaveta">
               <Input value={gaveta} onChange={(e) => setGaveta(e.target.value)} placeholder="Ex: GAVETA A" />
             </Field>
-            <Field label="Pasta">
+            <Field label="Código">
               <Input value={pasta} onChange={(e) => setPasta(e.target.value)} placeholder="Ex: 12" />
             </Field>
           </div>
           {!initial && (
-            <Field label="Código (opcional)">
+            <Field label="Pasta (opcional)">
               <Input
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value)}
