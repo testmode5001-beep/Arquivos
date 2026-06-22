@@ -579,7 +579,7 @@ function ClienteDialog({
           <DialogTitle className="font-display text-2xl">
             {initial ? "Editar cliente" : "Novo cliente"}
           </DialogTitle>
-          <DialogDescription>Preencha o nome, a gaveta e o número da pasta.</DialogDescription>
+        <DialogDescription>Preencha o nome, a gaveta, a pasta e o código.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4">
           <Field label="Nome do cliente">
@@ -589,12 +589,12 @@ function ClienteDialog({
             <Field label="Gaveta">
               <Input value={gaveta} onChange={(e) => setGaveta(e.target.value)} placeholder="Ex: GAVETA A" />
             </Field>
-            <Field label="Pasta">
+            <Field label="Código">
               <Input value={pasta} onChange={(e) => setPasta(e.target.value)} placeholder="Ex: 12" />
             </Field>
           </div>
           {!initial && (
-            <Field label="Código (opcional)">
+            <Field label="Pasta (opcional)">
               <Input
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value)}
