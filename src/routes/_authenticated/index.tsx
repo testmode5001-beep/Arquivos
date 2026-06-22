@@ -377,12 +377,12 @@ function Index() {
                       )}
                     </div>
                     <p className="mt-0.5 flex items-center gap-3 text-xs text-muted-foreground">
-                      <span>Cód. {c.codigo}</span>
+                      <span>Pasta {c.codigo}</span>
                       <span className="inline-flex items-center gap-1">
                         <Archive className="h-3 w-3" /> {c.gaveta ?? "—"}
                       </span>
                       <span className="inline-flex items-center gap-1">
-                        <Folder className="h-3 w-3" /> Pasta {c.pasta ?? "—"}
+                        <Folder className="h-3 w-3" /> Cód. {c.pasta ?? "—"}
                       </span>
                     </p>
                   </div>
