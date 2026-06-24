@@ -376,9 +376,6 @@ function Index() {
                       <span className="inline-flex items-center gap-1">
                         <Archive className="h-3 w-3" /> {c.gaveta ?? "—"}
                       </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Folder className="h-3 w-3" /> Cód. {c.pasta ?? "—"}
-                      </span>
                     </p>
                   </div>
                   {ultima && (
