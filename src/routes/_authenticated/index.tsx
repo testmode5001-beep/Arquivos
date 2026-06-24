@@ -76,7 +76,9 @@ function Index() {
       const { data, error } = await supabase.from("clientes").select("gaveta").not("gaveta", "is", null);
       if (error) throw error;
       const set = new Set<string>();
-      for (const r of data ?? []) if (r.gaveta) set.add(r.gaveta);
+      for (const r of data ?? []) {
+        if (r.gaveta && !/bacalhau/i.test(r.gaveta)) set.add(r.gaveta);
+      }
       return Array.from(set).sort();
     },
   });
