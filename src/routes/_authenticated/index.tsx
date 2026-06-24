@@ -391,7 +391,7 @@ function Index() {
                     <div className="grid gap-3 sm:grid-cols-2">
                       <InfoBlock label="Gaveta" value={c.gaveta ?? "—"} />
                       <InfoBlock label="Pasta" value={String(c.codigo)} />
-                      <InfoBlock label="Código" value={c.pasta ?? "—"} />
+                      
                       <InfoBlock label="Observação" value={c.obs?.trim() || "—"} />
                     </div>
 
