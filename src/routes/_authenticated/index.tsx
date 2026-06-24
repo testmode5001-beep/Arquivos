@@ -243,16 +243,9 @@ function Index() {
       <Toaster richColors position="top-center" />
       <div className="mx-auto max-w-3xl px-4 pb-24 pt-6 sm:px-6">
         <header className="flex items-center gap-3 pb-6">
-          <img
-            src="/r2-logo.png"
-            width={48}
-            height={48}
-            alt="R2"
-            className="h-12 w-12 rounded-2xl object-cover shadow-[0_4px_12px_-4px_rgba(0,0,0,0.25)]"
-          />
           <div className="flex-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              R2 Flexo
+              Design Hub
             </p>
             <h1 className="font-display text-2xl font-bold tracking-tight leading-none">Arquivos</h1>
           </div>
