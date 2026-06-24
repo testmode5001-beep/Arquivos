@@ -5,7 +5,7 @@ import {
   Search,
   Plus,
   Archive,
-  Folder,
+  
   Clock,
   Pencil,
   Trash2,
