@@ -70,7 +70,7 @@ function AuthPage() {
           </Button>
         </form>
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Acesso restrito à equipe R2 Flexo.
+          Acesso restrito à equipe Design Hub.
         </p>
       </div>
     </div>
