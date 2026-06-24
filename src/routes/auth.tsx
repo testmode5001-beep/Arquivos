@@ -42,14 +42,11 @@ function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Toaster richColors position="top-center" />
       <div className="w-full max-w-sm rounded-3xl bg-surface p-8 shadow-[0_1px_0_rgba(0,0,0,0.04),0_30px_60px_-30px_rgba(0,0,0,0.3)] ring-1 ring-border/60">
-        <div className="mb-6 flex items-center gap-3">
-          <img src="/r2-logo.png" alt="R2" className="h-12 w-12 rounded-2xl object-cover" />
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              R2 Flexo
-            </p>
-            <h1 className="font-display text-2xl font-bold leading-none tracking-tight">Arquivos</h1>
-          </div>
+        <div className="mb-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Design Hub
+          </p>
+          <h1 className="font-display text-2xl font-bold leading-none tracking-tight mt-1">Arquivos</h1>
         </div>
         <form onSubmit={submit} className="grid gap-4">
           <div className="grid gap-1.5">
