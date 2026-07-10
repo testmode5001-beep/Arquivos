@@ -115,7 +115,7 @@ function Index() {
   const { data: results = [], isFetching } = useQuery({
     queryKey: ["clientes", debounced, gavetaFilter],
     queryFn: async (): Promise<Cliente[]> => {
-      let q = supabase.from("clientes").select("id,codigo,nome,gaveta,pasta,obs").order("nome").limit(80);
+      let q = supabase.from("clientes").select("id,codigo,nome,gaveta,pasta,obs").order("nome").limit(2000);
       const term = debounced;
       if (term) {
         if (/^\d+$/.test(term)) {
