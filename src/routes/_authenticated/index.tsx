@@ -114,12 +114,14 @@ function Index() {
   });
 
   const { data: results = [], isFetching } = useQuery({
-    queryKey: ["clientes", debounced, gavetaFilter],
+    queryKey: ["clientes", debounced, gavetaFilter, searchMode],
     queryFn: async (): Promise<Cliente[]> => {
       let q = supabase.from("clientes").select("id,codigo,nome,gaveta,pasta,obs").order("nome").limit(2000);
       const term = debounced;
       if (term) {
-        if (/^\d+$/.test(term)) {
+        if (searchMode === "pasta") {
+          q = q.ilike("pasta", `%${term}%`);
+        } else if (/^\d+$/.test(term)) {
           q = q.or(`pasta.eq.${term},codigo.eq.${term}`);
         } else {
           q = q.ilike("nome", `%${term}%`);
