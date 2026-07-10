@@ -280,7 +280,12 @@ function Index() {
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar por nome do cliente ou nº da pasta…"
+              placeholder={
+                searchMode === "pasta"
+                  ? "Digite o nº da pasta…"
+                  : "Buscar por nome do cliente ou nº da pasta…"
+              }
+              inputMode={searchMode === "pasta" ? "numeric" : "text"}
               className="border-0 bg-transparent text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             />
             {query && (
@@ -293,6 +298,26 @@ function Index() {
               </button>
             )}
           </div>
+        </div>
+
+        <div className="mt-2 flex justify-center gap-1">
+          {(["nome", "pasta"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => {
+                setSearchMode(m);
+                setQuery("");
+                setDebounced("");
+              }}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                searchMode === m
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {m === "pasta" ? "Nº da pasta" : "Nome"}
+            </button>
+          ))}
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
