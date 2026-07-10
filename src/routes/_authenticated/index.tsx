@@ -366,7 +366,9 @@ function Index() {
               : `${results.length} resultado${results.length === 1 ? "" : "s"}`
             : recentes.length > 0
               ? "Consultados recentemente"
-              : "Digite o nome ou o número da pasta para começar."}
+              : searchMode === "pasta"
+                ? "Digite o número da pasta para começar."
+                : "Digite o nome ou o número da pasta para começar."}
         </p>
 
         <ul className="mt-4 space-y-3">
