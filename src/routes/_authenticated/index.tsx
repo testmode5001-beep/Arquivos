@@ -34,8 +34,8 @@ import { Toaster } from "@/components/ui/sonner";
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
-      { title: "R2 Arquivos — Catálogo de Clichês" },
-      { name: "description", content: "Busque clientes, gavetas e pastas do arquivo de clichês R2 Flexo." },
+      { title: "Design Hub — Arquivos" },
+      { name: "description", content: "Busque clientes, gavetas e pastas do arquivo de clichês." },
     ],
   }),
   component: Index,
@@ -58,6 +58,7 @@ function Index() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
+  const [searchMode, setSearchMode] = useState<"nome" | "pasta">("nome");
   const [gavetaFilter, setGavetaFilter] = useState<string>("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
@@ -113,12 +114,14 @@ function Index() {
   });
 
   const { data: results = [], isFetching } = useQuery({
-    queryKey: ["clientes", debounced, gavetaFilter],
+    queryKey: ["clientes", debounced, gavetaFilter, searchMode],
     queryFn: async (): Promise<Cliente[]> => {
       let q = supabase.from("clientes").select("id,codigo,nome,gaveta,pasta,obs").order("nome").limit(2000);
       const term = debounced;
       if (term) {
-        if (/^\d+$/.test(term)) {
+        if (searchMode === "pasta") {
+          q = q.ilike("pasta", `%${term}%`);
+        } else if (/^\d+$/.test(term)) {
           q = q.or(`pasta.eq.${term},codigo.eq.${term}`);
         } else {
           q = q.ilike("nome", `%${term}%`);
@@ -277,7 +280,12 @@ function Index() {
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar por nome do cliente ou nº da pasta…"
+              placeholder={
+                searchMode === "pasta"
+                  ? "Digite o nº da pasta…"
+                  : "Buscar por nome do cliente ou nº da pasta…"
+              }
+              inputMode={searchMode === "pasta" ? "numeric" : "text"}
               className="border-0 bg-transparent text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             />
             {query && (
@@ -290,6 +298,26 @@ function Index() {
               </button>
             )}
           </div>
+        </div>
+
+        <div className="mt-2 flex justify-center gap-1">
+          {(["nome", "pasta"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => {
+                setSearchMode(m);
+                setQuery("");
+                setDebounced("");
+              }}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                searchMode === m
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              {m === "pasta" ? "Nº da pasta" : "Nome"}
+            </button>
+          ))}
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -338,7 +366,9 @@ function Index() {
               : `${results.length} resultado${results.length === 1 ? "" : "s"}`
             : recentes.length > 0
               ? "Consultados recentemente"
-              : "Digite o nome ou o número da pasta para começar."}
+              : searchMode === "pasta"
+                ? "Digite o número da pasta para começar."
+                : "Digite o nome ou o número da pasta para começar."}
         </p>
 
         <ul className="mt-4 space-y-3">
