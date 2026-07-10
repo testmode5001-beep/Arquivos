@@ -34,8 +34,8 @@ import { Toaster } from "@/components/ui/sonner";
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
     meta: [
-      { title: "R2 Arquivos — Catálogo de Clichês" },
-      { name: "description", content: "Busque clientes, gavetas e pastas do arquivo de clichês R2 Flexo." },
+      { title: "Design Hub — Arquivos" },
+      { name: "description", content: "Busque clientes, gavetas e pastas do arquivo de clichês." },
     ],
   }),
   component: Index,
