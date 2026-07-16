@@ -288,7 +288,9 @@ function Index() {
               placeholder={
                 searchMode === "pasta"
                   ? "Digite o nº da pasta…"
-                  : "Buscar por nome do cliente ou nº da pasta…"
+                  : searchMode === "codigo"
+                    ? "Digite o código do cliente…"
+                    : "Buscar por nome do cliente…"
               }
               inputMode={searchMode === "pasta" ? "numeric" : "text"}
               className="border-0 bg-transparent text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
