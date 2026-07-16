@@ -466,9 +466,7 @@ function Index() {
                         size="sm"
                         variant="ghost"
                         className="gap-1 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        onClick={() => {
-                          if (confirm(`Remover "${c.nome}"?`)) removerCliente.mutate(c.id);
-                        }}
+                        onClick={() => setDeleteTarget(c)}
                       >
                         <Trash2 className="h-3.5 w-3.5" /> Excluir
                       </Button>
