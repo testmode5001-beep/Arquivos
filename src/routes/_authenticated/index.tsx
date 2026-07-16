@@ -124,6 +124,32 @@ function Index() {
     },
   });
 
+  // Estatísticas globais: total de pastas e inativas (2+ anos sem consulta)
+  const { data: stats } = useQuery({
+    queryKey: ["stats-globais"],
+    queryFn: async (): Promise<{ total: number; inativos: number }> => {
+      const { count: total } = await supabase
+        .from("clientes")
+        .select("*", { count: "exact", head: true });
+      const { data: cons } = await supabase
+        .from("consultas")
+        .select("cliente_id,consultado_em")
+        .order("consultado_em", { ascending: false });
+      const last = new Map<string, string>();
+      for (const c of (cons ?? []) as ConsultaRow[]) {
+        if (!last.has(c.cliente_id)) last.set(c.cliente_id, c.consultado_em);
+      }
+      const cutoff = Date.now() - TWO_YEARS_MS;
+      const { data: allClientes } = await supabase.from("clientes").select("id");
+      let inativos = 0;
+      for (const c of allClientes ?? []) {
+        const u = last.get(c.id);
+        if (!u || new Date(u).getTime() < cutoff) inativos++;
+      }
+      return { total: total ?? 0, inativos };
+    },
+  });
+
   const { data: results = [], isFetching } = useQuery({
     queryKey: ["clientes", debounced, gavetaFilter, searchMode],
     queryFn: async (): Promise<Cliente[]> => {
@@ -376,6 +402,21 @@ function Index() {
             <Download className="h-3.5 w-3.5" /> Inativos (CSV)
           </Button>
         </div>
+
+        {!gavetaFilter && stats && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface px-3 py-1 font-medium ring-1 ring-border">
+              <Archive className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground">Total de pastas:</span>
+              <span className="font-semibold text-foreground">{stats.total}</span>
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-3 py-1 font-medium text-destructive ring-1 ring-destructive/20">
+              <AlertTriangle className="h-3 w-3" />
+              <span>Inativas:</span>
+              <span className="font-semibold">{stats.inativos}</span>
+            </span>
+          </div>
+        )}
 
         <p className="mt-3 text-xs text-muted-foreground">
           {debounced || gavetaFilter
