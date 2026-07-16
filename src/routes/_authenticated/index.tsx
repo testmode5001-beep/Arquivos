@@ -124,6 +124,32 @@ function Index() {
     },
   });
 
+  // Estatísticas globais: total de pastas e inativas (2+ anos sem consulta)
+  const { data: stats } = useQuery({
+    queryKey: ["stats-globais"],
+    queryFn: async (): Promise<{ total: number; inativos: number }> => {
+      const { count: total } = await supabase
+        .from("clientes")
+        .select("*", { count: "exact", head: true });
+      const { data: cons } = await supabase
+        .from("consultas")
+        .select("cliente_id,consultado_em")
+        .order("consultado_em", { ascending: false });
+      const last = new Map<string, string>();
+      for (const c of (cons ?? []) as ConsultaRow[]) {
+        if (!last.has(c.cliente_id)) last.set(c.cliente_id, c.consultado_em);
+      }
+      const cutoff = Date.now() - TWO_YEARS_MS;
+      const { data: allClientes } = await supabase.from("clientes").select("id");
+      let inativos = 0;
+      for (const c of allClientes ?? []) {
+        const u = last.get(c.id);
+        if (!u || new Date(u).getTime() < cutoff) inativos++;
+      }
+      return { total: total ?? 0, inativos };
+    },
+  });
+
   const { data: results = [], isFetching } = useQuery({
     queryKey: ["clientes", debounced, gavetaFilter, searchMode],
     queryFn: async (): Promise<Cliente[]> => {
