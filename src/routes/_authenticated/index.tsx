@@ -58,7 +58,7 @@ function Index() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [searchMode, setSearchMode] = useState<"nome" | "pasta">("nome");
+  const [searchMode, setSearchMode] = useState<"nome" | "pasta" | "codigo">("nome");
   const [gavetaFilter, setGavetaFilter] = useState<string>("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
