@@ -308,7 +308,7 @@ function Index() {
         </div>
 
         <div className="mt-2 flex justify-center gap-1">
-          {(["nome", "pasta"] as const).map((m) => (
+          {(["nome", "pasta", "codigo"] as const).map((m) => (
             <button
               key={m}
               onClick={() => {
@@ -322,7 +322,7 @@ function Index() {
                   : "text-muted-foreground hover:bg-muted"
               }`}
             >
-              {m === "pasta" ? "Nº da pasta" : "Nome"}
+              {m === "pasta" ? "Nº da pasta" : m === "codigo" ? "Código" : "Nome"}
             </button>
           ))}
         </div>
