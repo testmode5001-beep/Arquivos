@@ -63,6 +63,7 @@ function Index() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Cliente | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Cliente | null>(null);
   const qc = useQueryClient();
 
   useEffect(() => {
