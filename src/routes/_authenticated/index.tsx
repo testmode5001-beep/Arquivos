@@ -403,6 +403,21 @@ function Index() {
           </Button>
         </div>
 
+        {!gavetaFilter && stats && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface px-3 py-1 font-medium ring-1 ring-border">
+              <Archive className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground">Total de pastas:</span>
+              <span className="font-semibold text-foreground">{stats.total}</span>
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-3 py-1 font-medium text-destructive ring-1 ring-destructive/20">
+              <AlertTriangle className="h-3 w-3" />
+              <span>Inativas:</span>
+              <span className="font-semibold">{stats.inativos}</span>
+            </span>
+          </div>
+        )}
+
         <p className="mt-3 text-xs text-muted-foreground">
           {debounced || gavetaFilter
             ? isFetching
