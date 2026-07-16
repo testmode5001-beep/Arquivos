@@ -58,7 +58,7 @@ function Index() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
-  const [searchMode, setSearchMode] = useState<"nome" | "pasta">("nome");
+  const [searchMode, setSearchMode] = useState<"nome" | "pasta" | "codigo">("nome");
   const [gavetaFilter, setGavetaFilter] = useState<string>("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
@@ -120,9 +120,14 @@ function Index() {
       const term = debounced;
       if (term) {
         if (searchMode === "pasta") {
+          // Label "Pasta" = coluna codigo (numérica)
+          if (/^\d+$/.test(term)) q = q.eq("codigo", Number(term));
+          else return [];
+        } else if (searchMode === "codigo") {
+          // Label "Código" = coluna pasta (texto livre)
           q = q.ilike("pasta", `%${term}%`);
         } else if (/^\d+$/.test(term)) {
-          q = q.or(`pasta.eq.${term},codigo.eq.${term}`);
+          q = q.or(`codigo.eq.${term},pasta.eq.${term}`);
         } else {
           q = q.ilike("nome", `%${term}%`);
         }
@@ -283,7 +288,9 @@ function Index() {
               placeholder={
                 searchMode === "pasta"
                   ? "Digite o nº da pasta…"
-                  : "Buscar por nome do cliente ou nº da pasta…"
+                  : searchMode === "codigo"
+                    ? "Digite o código do cliente…"
+                    : "Buscar por nome do cliente…"
               }
               inputMode={searchMode === "pasta" ? "numeric" : "text"}
               className="border-0 bg-transparent text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -301,7 +308,7 @@ function Index() {
         </div>
 
         <div className="mt-2 flex justify-center gap-1">
-          {(["nome", "pasta"] as const).map((m) => (
+          {(["nome", "pasta", "codigo"] as const).map((m) => (
             <button
               key={m}
               onClick={() => {
@@ -315,7 +322,7 @@ function Index() {
                   : "text-muted-foreground hover:bg-muted"
               }`}
             >
-              {m === "pasta" ? "Nº da pasta" : "Nome"}
+              {m === "pasta" ? "Nº da pasta" : m === "codigo" ? "Código" : "Nome"}
             </button>
           ))}
         </div>
