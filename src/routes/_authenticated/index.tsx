@@ -30,6 +30,16 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -63,6 +73,7 @@ function Index() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [newOpen, setNewOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Cliente | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Cliente | null>(null);
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -465,9 +476,7 @@ function Index() {
                         size="sm"
                         variant="ghost"
                         className="gap-1 rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        onClick={() => {
-                          if (confirm(`Remover "${c.nome}"?`)) removerCliente.mutate(c.id);
-                        }}
+                        onClick={() => setDeleteTarget(c)}
                       >
                         <Trash2 className="h-3.5 w-3.5" /> Excluir
                       </Button>
@@ -512,6 +521,29 @@ function Index() {
           qc.invalidateQueries({ queryKey: ["clientes"] });
         }}
       />
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O cliente{" "}
+              <span className="font-semibold text-foreground">{deleteTarget?.nome}</span> será removido permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                if (deleteTarget) removerCliente.mutate(deleteTarget.id);
+                setDeleteTarget(null);
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
