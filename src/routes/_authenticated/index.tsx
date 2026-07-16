@@ -120,9 +120,14 @@ function Index() {
       const term = debounced;
       if (term) {
         if (searchMode === "pasta") {
+          // Label "Pasta" = coluna codigo (numérica)
+          if (/^\d+$/.test(term)) q = q.eq("codigo", Number(term));
+          else return [];
+        } else if (searchMode === "codigo") {
+          // Label "Código" = coluna pasta (texto livre)
           q = q.ilike("pasta", `%${term}%`);
         } else if (/^\d+$/.test(term)) {
-          q = q.or(`pasta.eq.${term},codigo.eq.${term}`);
+          q = q.or(`codigo.eq.${term},pasta.eq.${term}`);
         } else {
           q = q.ilike("nome", `%${term}%`);
         }
